@@ -1,0 +1,43 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: router-operator
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eg8145v5-ingress-operator
+  namespace: router-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eg8145v5-ingress-operator
+  template:
+    metadata:
+      labels:
+        app: eg8145v5-ingress-operator
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+        - name: main
+          image: harbor.leroy.lab/library/eg8145v5-ingress-operator:latest
+          imagePullPolicy: Always
+          env:
+            - name: ROUTER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: router-configuration
+                  key: router_url
+            - name: ROUTER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: router-credentials
+                  key: router_username
+            - name: ROUTER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: router-credentials
+                  key: router_password

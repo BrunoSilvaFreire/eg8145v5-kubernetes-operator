@@ -1,0 +1,3 @@
+[submodule "go-huawei-client"]
+	path = go-huawei-client
+	url = git@github.com:BrunoSilvaFreire/go-huawei-client.git
