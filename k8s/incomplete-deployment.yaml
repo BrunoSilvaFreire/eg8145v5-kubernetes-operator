@@ -1,0 +1,91 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: router-operator
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: router-configuration
+  namespace: router-operator
+data:
+  router-service-host-format: "{name}.leroy.lab"
+#  router-url: "http://192.168.18.1" Put your router url here
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eg8145v5-ingress-operator
+  namespace: router-operator
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: eg8145v5-ingress-operator
+rules:
+  - apiGroups: [ "" ]
+    verbs: [ "get", "list", "watch" ]
+    resources: [ "services" ]
+  - apiGroups: [ "networking.k8s.io" ]
+    verbs: [ "get", "list", "watch" ]
+    resources: [ "ingresses" ]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: eg8145v5-ingress-operator-role-binding
+  namespace: router-operator
+roleRef:
+  apiGroup: ""
+  kind: ClusterRole
+  name: eg8145v5-ingress-operator
+subjects:
+  - kind: ServiceAccount
+    name: eg8145v5-ingress-operator
+    namespace: router-operator
+    apiGroup: ""
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eg8145v5-ingress-operator
+  namespace: router-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eg8145v5-ingress-operator
+  template:
+    metadata:
+      labels:
+        app: eg8145v5-ingress-operator
+    spec:
+      serviceAccountName: eg8145v5-ingress-operator
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      containers:
+        - name: main
+          image: harbor.leroy.lab/library/eg8145v5-ingress-operator:latest
+          imagePullPolicy: Always
+          env:
+            - name: ROUTER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: router-configuration
+                  key: router-url
+            - name: ROUTER_SERVICE_HOST_FORMAT
+              valueFrom:
+                configMapKeyRef:
+                  name: router-configuration
+                  key: router-service-host-format
+            - name: ROUTER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: router-credentials
+                  key: router-username
+            - name: ROUTER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: router-credentials
+                  key: router-password
